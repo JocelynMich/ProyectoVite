@@ -4,5 +4,8 @@ import { Direction } from "../models/direction";
 export const getDireccion = async (): Promise<Direction[]> => {
     const { data , error} = await supabase.from("direccion").select();
     if (error) throw error;
-    return data
+    else{
+        console.log ("Direction:", data);
+    }
+   return data || []; 
 }

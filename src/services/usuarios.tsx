@@ -4,5 +4,8 @@ import { User } from "../models/user";
 export const getUsuarios = async (): Promise<User[]> => {
     const { data , error} = await supabase.from("usuarios").select();
     if (error) throw error;
-    return data
+    else{
+        console.log ("User:", data);
+    }
+   return data || []; 
 }
