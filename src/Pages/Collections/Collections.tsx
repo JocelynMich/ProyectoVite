@@ -1,5 +1,5 @@
 import React from "react";
-import { Space, Row, Card, Button, Typography, Col } from "antd";
+import { Space, Row, Card, Button, Typography} from "antd";
 import { Link, Outlet, useOutlet } from "react-router-dom";
 import { toTitleCase } from "../../utils/stringFormater";
 
