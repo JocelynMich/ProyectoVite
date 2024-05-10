@@ -1,10 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { getSesionProductos } from "../services/sesiones_productos";
-import { Table } from "antd";
+import { Table, Drawer, Button, Form, Input } from "antd";
 import { SessionProduct } from "../models/session_product";
+import DrawerFooter from "./DrawerFooter";
+
 
 const TablaSesionesProductos: React.FC = () => {
   const [session_product, setSessionProduct] = useState<SessionProduct[]>([]);
+
+  const [open, setOpen] = useState(false);
+
+  const showDrawer = () => {
+    setOpen(true);
+  };
+
+  const onClose = () => {
+    setOpen(false);
+  };
 
   useEffect(() => {
     const fetchSessionProduct = async () => {
@@ -41,10 +53,39 @@ const TablaSesionesProductos: React.FC = () => {
 
   return (
     <>
-      <Table
-        columns={columns}
-        dataSource={session_product}
-      />
+     <Button type="primary" onClick={showDrawer}>
+        Agregar sesiones productos
+      </Button>
+      <Table columns={columns} dataSource={session_product}/>
+      <Drawer title="Agregar Sesiones Productos" onClose={onClose} open={open} footer={<DrawerFooter/>}>
+        <Form>
+          <Form.Item<SessionProduct>
+            label="ID_Sesion"
+            name="ID_Sesion"
+            rules={[{ required: true, message: "Agrega el ID de la sesión" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item<SessionProduct>
+            label="ID_Producto"
+            name="ID_Producto"
+            rules={[{ required: true, message: "Agrega el ID del producto" }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.Item<SessionProduct>
+            label="Cantidad"
+            name="Cantidad"
+            rules={[{ required: true, message: "Agrega cantidad del producto" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
+          </Form.Item>
+        </Form>
+      </Drawer>
 
     </>
   );

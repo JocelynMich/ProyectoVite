@@ -80,7 +80,7 @@ const TablaCategorias: React.FC = () => {
   return (
     <>
       <Button type="primary" onClick={showDrawer}>
-        Agregar categoria +
+        Agregar categoria
       </Button>
       <Table columns={columns} dataSource={category} />
       <Drawer title="Agregar Categoria" onClose={onClose} open={open} footer={<DrawerFooter/>}>
