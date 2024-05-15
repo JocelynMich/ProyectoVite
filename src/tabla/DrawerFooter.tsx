@@ -1,18 +1,23 @@
 import {Button, Row, Col} from "antd"
+import React from 'react';
 
-const DrawerFooter = () => {
-    return(
-        <>
-        <Row justify="space-between">
+interface DrawerFooterProps {
+    createRecord?: () => void;
+  }
+  
+  const DrawerFooter: React.FC<DrawerFooterProps> = ({ createRecord }) => {
+    return (
+      <Row justify="space-between">
         <Col>
-        <Button type= "primary">Guardar</Button> 
+          <Button type="default">Cancelar</Button>
         </Col>
         <Col>
-        <Button type= "default">Cancelar</Button> 
+          <Button type="primary" onClick={createRecord}>
+            Guardar
+          </Button>
         </Col>
-        </Row>
-
-        </>
-    )
-}
-export default DrawerFooter;
+      </Row>
+    );
+  };
+  
+  export default DrawerFooter;
