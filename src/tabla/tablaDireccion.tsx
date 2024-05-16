@@ -1,14 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { getDireccion } from "../services/direccion";
+import { getDireccion, createDireccion} from "../services/direccion";
 import { Table, Drawer, Button, Form, Input } from "antd";
 import { Direction } from "../models/direction";
 import DrawerFooter from "./DrawerFooter";
-
+import supabase from "../utils/supabase";
 
 const TablaDireccion: React.FC = () => {
   const [direction, setDirection] = useState<Direction[]>([]);
-
   const [open, setOpen] = useState(false);
+  const [codigopostal, setCP] = useState<string>('');
+  const [calle, setCalle] = useState<string>('');
+  const [numext, setNumEXT] = useState<string>('');
+  const [numint, setNumINT] = useState<string>('');
+  const [ciudad, setCiudad] = useState<string>('');
+
 
   const showDrawer = () => {
     setOpen(true);
@@ -24,12 +29,60 @@ const TablaDireccion: React.FC = () => {
         const direction = await getDireccion();
         setDirection(direction);
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching direccion:", error);
       }
     };
 
     fetchDirection();
   }, []);
+
+  const onChangeCodigoPostal = (value: string | null | undefined) => {
+    if (value !== null && value !== undefined) {
+      setCP(value);
+    } else {
+      setCP('');
+    }
+  };
+  
+  const handleSubmit = async () => {
+    const randomID =  Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+
+    try {
+      const currentDateTime = new Date();
+      // Consultar el ID máximo actual en la tabla direccion
+      const maxIdResponse = await supabase
+        .from("direccion")
+        .select("id_direccion")
+        .order("id_direccion", { ascending: false })
+        .limit(1);
+
+      const maxId = maxIdResponse.data?.[0]?.id_direccion || 0;
+      const newId = maxId + 1;
+
+      // Crear el objeto de dirección con el nuevo ID
+      const direccionInput: Direction = {
+        id_direccion: newId,
+        codigopostal,
+        calle,
+        numext,
+        numint,
+        ciudad,
+        fechacreacion: currentDateTime, 
+        fk_creadopor: randomID
+      };
+
+      // Insertar el nuevo registro en la base de datos
+      await createDireccion(direccionInput);
+
+      // Actualizar la lista de direcciones después de la inserción
+      const updatedDireccion = await getDireccion();
+      setDirection(updatedDireccion);
+      onClose();
+    } catch (error) {
+      console.error("Error creating direccion:", error);
+    }
+  };
+
 
   const columns = [
     {
@@ -103,110 +156,54 @@ const TablaDireccion: React.FC = () => {
     }
   ];
 
+  
   return (
-    <>
+  <>
      <Button type="primary" onClick={showDrawer}>
         Agregar dirección
       </Button>
       <Table columns={columns} dataSource={direction}
       />
-        <Drawer title="Agregar Categoria" onClose={onClose} open={open} footer={<DrawerFooter/>}>
-        <Form>
-          <Form.Item<Direction>
-            label="ID_Direccion"
-            name="ID_Direccion"
-            rules={[{ required: true, message: "Agrega el ID" }]}
-          >
-            <Input />
-          </Form.Item>
-
+        <Drawer title="Agregar Direccion" onClose={onClose} open={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+        <Form onFinish={handleSubmit}>
           <Form.Item<Direction>
             label="Codigo_Postal"
-            name="Codigo_Postal"
+            name="codigopostal"
             rules={[{ required: true, message: "Agrega el código postal" }]}
           >
-            <Input />
+          <Input value={codigopostal} onChange={(e) => setCP(e.target.value)} />          
           </Form.Item>
-
           <Form.Item<Direction>
             label="Calle"
-            name="Calle"
+            name="calle"
             rules={[{ required: true, message: "Agrega la calle" }]}
           >
-            <Input />
+          <Input value={calle} onChange={(e) => setCalle(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Direction>
             label="Num_Exterior"
-            name="Num_Exterior"
+            name="numext"
             rules={[{ required: true, message: "Agrega el número exterior" }]}
           >
-            <Input />
+          <Input value={numext} onChange={(e) => setNumEXT(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Direction>
             label="Num_Interior"
-            name="Num_Interior"
+            name="numint"
             rules={[{ required: true, message: "Agrega el número interior" }]}
           >
-            <Input />
+          <Input value={numint} onChange={(e) => setNumINT(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Direction>
             label="Ciudad"
-            name="Ciudad"
+            name="ciudad"
             rules={[{ required: true, message: "Agrega la ciudad" }]}
           >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="FechaCreacion"
-            name="FechaCreacion"
-            rules={[{ required: true, message: "Agrega fecha de creacion" }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="fk_CreadoPor"
-            name="fk_CreadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="FechaActu"
-            name="FechaActu"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="fk_ActualizadoPor"
-            name="fk_ActualizadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="FechaEliminado"
-            name="FechaEliminado"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Direction>
-            label="fk_EliminadoPor"
-            name="fk_EliminadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
+          <Input value={ciudad} onChange={(e) => setCiudad(e.target.value)} />      
+          </Form.Item>    
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           </Form.Item>
         </Form>

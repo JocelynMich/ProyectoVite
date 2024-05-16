@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { getUsuarios } from "../services/usuarios";
-import { Table, Drawer, Button, Form, Input } from "antd";
+import { getUsuarios, createUsuarios } from "../services/usuarios";
+import { Table, Drawer, Button, Form, Input, InputNumber, InputNumberProps } from "antd";
 import { User } from "../models/user";
 import DrawerFooter from "./DrawerFooter";
-
+import supabase from "../utils/supabase";
 
 const TablaUsuarios: React.FC = () => {
   const [users, setUser] = useState<User[]>([]);
-
+  const [nombre, setNombre] = useState<string>('');
   const [open, setOpen] = useState(false);
 
   const showDrawer = () => {
@@ -30,6 +30,37 @@ const TablaUsuarios: React.FC = () => {
 
     fetchUser();
   }, []);
+
+  const handleSubmit = async () => {
+    const randomID =  Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+  
+      try {
+        const currentDateTime = new Date();
+        const maxIdResponse = await supabase
+          .from("usuarios")
+          .select("id_usuario")
+          .order("id_usuario", { ascending: false })
+          .limit(1);
+  
+          const maxId = maxIdResponse.data?.[0]?.id_usuario || 0;
+          const newId = maxId + 1;
+        // Crear el objeto de dirección con el nuevo ID
+        const UserInput: User = {
+          id_usuario: newId,
+          nombre,
+          fechacreacion:currentDateTime,
+          fk_creadopor:randomID,
+        };
+    
+        await createUsuarios(UserInput);
+    
+        const updateUser = await getUsuarios();
+        setUser(updateUser);
+        onClose();
+      } catch (error) {
+        console.error("Error creating usuarios:", error);
+      }
+    };
 
   const columns = [
     {
@@ -86,71 +117,18 @@ const TablaUsuarios: React.FC = () => {
         Agregar usuario
       </Button>
       <Table columns={columns} dataSource={users}/>
-      <Drawer title="Agregar Usuarios" onClose={onClose} open={open} footer={<DrawerFooter/>}>
-        <Form>
-          <Form.Item<User>
-            label="ID_Usuario"
-            name="ID_Usuario"
-            rules={[{ required: true, message: "Agrega el ID del usuario" }]}
-          >
-            <Input />
-          </Form.Item>
-
+      <Drawer title="Agregar Usuarios" onClose={onClose} open={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+      <Form onFinish={handleSubmit}>
           <Form.Item<User>
             label="Nombre"
-            name="Nombre"
+            name="nombre"
             rules={[{ required: true, message: "Agrega el nombre" }]}
           >
-            <Input />
+           <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />
           </Form.Item>
 
-          <Form.Item<User>
-            label="FechaCreacion"
-            name="FechaCreacion"
-            rules={[{ required: true, message: "Agrega fecha de creacion" }]}
-          >
-            <Input />
-          </Form.Item>
 
-          <Form.Item<User>
-            label="fk_CreadoPor"
-            name="fk_CreadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<User>
-            label="FechaActu"
-            name="FechaActu"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<User>
-            label="fk_ActualizadoPor"
-            name="fk_ActualizadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<User>
-            label="FechaEliminado"
-            name="FechaEliminado"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<User>
-            label="fk_EliminadoPor"
-            name="fk_EliminadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
+      
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           </Form.Item>
         </Form>

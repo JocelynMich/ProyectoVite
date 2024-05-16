@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { getProductos } from "../services/productos";
-import { Table, Drawer, Button, Form, Input } from "antd";
+import { getProductos,createProducts } from "../services/productos";
+import { Table, Drawer, Button, Form, Input, InputNumberProps, InputNumber } from "antd";
 import { Product } from "../models/product";
 import DrawerFooter from "./DrawerFooter";
-
+import supabase from "../utils/supabase";
 
 const TablaProductos: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [nombre, setNombre] = useState<string>('');
+  const [descripcion, setDescripcion] = useState<string>('');
+  const [precio, setPrecio] = useState<number>(0);
+  const [idcategoria, setIDCategoria] = useState<number>(0);
 
   const [open, setOpen] = useState(false);
 
@@ -30,6 +34,60 @@ const TablaProductos: React.FC = () => {
 
     fetchProducts();
   }, []);
+
+  const handleSubmit = async () => {
+    const randomID =  Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+
+    try {
+      const currentDateTime = new Date();
+      // Consultar el ID máximo actual en la tabla direccion
+      const maxIdResponse = await supabase
+        .from("productos")
+        .select("id_producto")
+        .order("id_producto", { ascending: false })
+        .limit(1);
+
+      const maxId = maxIdResponse.data?.[0]?.id_producto || 0;
+      const newId = maxId + 1;
+
+      // Crear el objeto de dirección con el nuevo ID
+      const productosInput: Product = {
+        id_producto: newId,
+        nombre,
+        descripcion,
+        precio,
+        idcategoria,
+        fechacreacion: currentDateTime, 
+        fk_creadopor: randomID
+      };
+
+      // Insertar el nuevo registro en la base de datos
+      await createProducts(productosInput);
+
+      // Actualizar la lista de direcciones después de la inserción
+      const updatedProductos = await getProductos();
+      setProducts(updatedProductos);
+      onClose();
+    } catch (error) {
+      console.error("Error creating productos:", error);
+    }
+  };
+
+  const onChangeP: InputNumberProps['onChange'] = (value) => {
+    if (value !== null && typeof value === 'number') {
+      setPrecio(value);
+    } else {
+      setPrecio(0);
+    }
+  };
+
+  const onChangeC: InputNumberProps['onChange'] = (value) => {
+    if (value !== null && typeof value === 'number') {
+      setIDCategoria(value);
+    } else {
+      setIDCategoria(0);
+    }
+  };
 
   const columns = [
     {
@@ -104,96 +162,37 @@ const TablaProductos: React.FC = () => {
         Agregar producto
       </Button>
       <Table columns={columns} dataSource={products}/>
-      <Drawer title="Agregar Categoria" onClose={onClose} open={open} footer={<DrawerFooter/>}>
-        <Form>
-          <Form.Item<Product>
-            label="ID_Producto"
-            name="ID_Producto"
-            rules={[{ required: true, message: "Agrega el ID del producto" }]}
-          >
-            <Input />
-          </Form.Item>
-
+      <Drawer title="Agregar Productos" onClose={onClose} open={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+      <Form onFinish={handleSubmit}>
           <Form.Item<Product>
             label="Nombre"
-            name="Nombre"
+            name="nombre"
             rules={[{ required: true, message: "Agrega el nombre del producto" }]}
           >
-            <Input />
+          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Product>
             label="Descripcion"
-            name="Descripcion"
+            name="descripcion"
             rules={[{ required: true, message: "Agrega la descripción del producto" }]}
           >
-            <Input />
+          <Input value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Product>
             label="Precio"
-            name="Precio"
+            name="precio"
             rules={[{ required: true, message: "Agrega el precio" }]}
           >
-            <Input />
-          </Form.Item>
+          <InputNumber defaultValue={precio} onChange={onChangeP} />          </Form.Item>
 
           <Form.Item<Product>
             label="ID_Categoria"
-            name="ID_Categoria"
+            name="idcategoria"
             rules={[{ required: true, message: "Agrega el ID de la categoria del producto" }]}
           >
-            <Input />
-          </Form.Item>
-
-
-          <Form.Item<Product>
-            label="FechaCreacion"
-            name="FechaCreacion"
-            rules={[{ required: true, message: "Agrega fecha de creacion" }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Product>
-            label="fk_CreadoPor"
-            name="fk_CreadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Product>
-            label="FechaActu"
-            name="FechaActu"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Product>
-            label="fk_ActualizadoPor"
-            name="fk_ActualizadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Product>
-            label="FechaEliminado"
-            name="FechaEliminado"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Product>
-            label="fk_EliminadoPor"
-            name="fk_EliminadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
+          <InputNumber defaultValue={idcategoria} onChange={onChangeC} />          </Form.Item>
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           </Form.Item>
         </Form>

@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { getCliente } from "../services/clientes";
-import { Table, Drawer, Button, Form, Input } from "antd";
+import { getCliente, createClientes } from "../services/clientes";
+import { Table, Drawer, Button, Form, Input, DatePicker, DatePickerProps, InputNumber,InputNumberProps } from "antd";
 import { Client } from "../models/client";
 import DrawerFooter from "./DrawerFooter";
-
+import supabase from "../utils/supabase";
 
 const TablaCliente: React.FC = () => {
   const [clients, setCliente] = useState<Client[]>([]);
+  const [nombre, setNombre] = useState<string>('');
+  const [apellido, setApellido] = useState<string>('');
+  const [telefono, setTelefono] = useState<string>('');
+  const [correo, setCorreo] = useState<string>('');
+  const [fechanac, setfechaNacimiento] = useState<Date>(new Date());
+  const [idgenero, setIDGenero] = useState<number>(0);
+  const [iddireccion, setIDDireccion] = useState<number>(0);
 
   const [open, setOpen] = useState(false);
 
@@ -31,6 +38,67 @@ const TablaCliente: React.FC = () => {
     fetchClients();
   }, []);
 
+  const onChange: DatePickerProps['onChange'] = (date) => {
+    const selectedDate = new Date(date.year(), date.month() + 1, date.date());
+    setfechaNacimiento(selectedDate);
+  };
+
+  const handleSubmit = async () => {
+    const randomID =  Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+
+    try {
+      const currentDateTime = new Date();
+      // Consultar el ID máximo actual en la tabla direccion
+      const maxIdResponse = await supabase
+        .from("clientes")
+        .select("id_cliente")
+        .order("id_cliente", { ascending: false })
+        .limit(1);
+
+      const maxId = maxIdResponse.data?.[0]?.id_cliente || 0;
+      const newId = maxId + 1;
+
+      // Crear el objeto de dirección con el nuevo ID
+      const clientesInput: Client = {
+        id_cliente: newId,
+        nombre,
+        apellido,
+        fechanac:fechanac,
+        idgenero,
+        telefono,
+        correo,
+        iddireccion,
+        fechacreacion: currentDateTime, 
+        fk_creadopor: randomID
+      };
+
+      // Insertar el nuevo registro en la base de datos
+      await createClientes(clientesInput);
+
+      // Actualizar la lista de direcciones después de la inserción
+      const updatedCLientes = await getCliente();
+      setCliente(updatedCLientes);
+      onClose();
+    } catch (error) {
+      console.error("Error creating clientes:", error);
+    }
+  };
+
+  const onChangeG: InputNumberProps['onChange'] = (value) => {
+    if (value !== null && typeof value === 'number') {
+      setIDGenero(value);
+    } else {
+      setIDGenero(0);
+    }
+  };
+
+  const onChangeD: InputNumberProps['onChange'] = (value) => {
+    if (value !== null && typeof value === 'number') {
+      setIDDireccion(value);
+    } else {
+      setIDDireccion(0);
+    }
+  };
   const columns = [
     {
         title: 'ID_Cliente',
@@ -120,119 +188,60 @@ const TablaCliente: React.FC = () => {
       </Button>
       <Table columns={columns} dataSource={clients}
       />
-   <Drawer title="Agregar Cliente" onClose={onClose} open={open} footer={<DrawerFooter/>}>
-        <Form>
-          <Form.Item<Client>
-            label="ID_Cliente"
-            name="ID_Cliente"
-            rules={[{ required: true, message: "Agrega el ID" }]}
-          >
-            <Input />
-          </Form.Item>
-
+   <Drawer title="Agregar Cliente" onClose={onClose} open={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+   <Form onFinish={handleSubmit}>
           <Form.Item<Client>
             label="Nombre"
-            name="Nombre"
+            name="nombre"
             rules={[{ required: true, message: "Agrega el nombre" }]}
           >
-            <Input />
+          <Input value={nombre} onChange={(e) => setNombre(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Client>
             label="Apellido"
-            name="Apellido"
+            name="apellido"
             rules={[{ required: true, message: "Agrega el apellido" }]}
           >
-            <Input />
+          <Input value={apellido} onChange={(e) => setApellido(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Client>
             label="Fecha_Nacimiento"
-            name="Fecha_Nacimiento"
+            name="fechanac"
             rules={[{ required: true, message: "Agrega fecha de nacimiento" }]}
           >
-            <Input />
-          </Form.Item>
+          <DatePicker onChange={onChange} />          </Form.Item>
           
           <Form.Item<Client>
             label="ID_Genero"
-            name="ID_Genero"
+            name="idgenero"
             rules={[{ required: true, message: "Agrega ID de Genero" }]}
           >
-            <Input />
-          </Form.Item>
+          <InputNumber defaultValue={idgenero} onChange={onChangeG} />          </Form.Item>
 
           <Form.Item<Client>
             label="Telefono"
-            name="Telefono"
+            name="telefono"
             rules={[{ required: true, message: "Agrega número de telefono" }]}
           >
-            <Input />
+          <Input value={telefono} onChange={(e) => setTelefono(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Client>
             label="Correo"
-            name="Correo"
+            name="correo"
             rules={[{ required: true, message: "Agrega correo electrónico" }]}
           >
-            <Input />
+          <Input value={correo} onChange={(e) => setCorreo(e.target.value)} />          
           </Form.Item>
 
           <Form.Item<Client>
             label="ID_Direccion"
-            name="ID_Direccion"
+            name="iddireccion"
             rules={[{ required: true, message: "Agrega ID de la dirección" }]}
           >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="FechaCreacion"
-            name="FechaCreacion"
-            rules={[{ required: true, message: "Agrega fecha de creacion" }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="fk_CreadoPor"
-            name="fk_CreadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="FechaActu"
-            name="FechaActu"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="fk_ActualizadoPor"
-            name="fk_ActualizadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="FechaEliminado"
-            name="FechaEliminado"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Client>
-            label="fk_EliminadoPor"
-            name="fk_EliminadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
+          <InputNumber defaultValue={iddireccion} onChange={onChangeD} />          </Form.Item>
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           </Form.Item>
         </Form>

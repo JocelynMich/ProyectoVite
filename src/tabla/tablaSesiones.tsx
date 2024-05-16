@@ -1,13 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { getSesiones } from "../services/sesiones";
-import { Table, Drawer, Button, Form, Input } from "antd";
+import { getSesiones, createSesion } from "../services/sesiones";
+import { Table, Drawer, Button, Form, Input, InputNumberProps, DatePicker,DatePickerProps, InputNumber } from "antd";
 import { Session } from "../models/session";
 import DrawerFooter from "./DrawerFooter";
-
+import supabase from "../utils/supabase";
+import moment from 'moment';
 
 const TablaSesiones: React.FC = () => {
   const [session, setSessions] = useState<Session[]>([]);
-
+  const [idcliente, setIDCliente] = useState<number>(0);
+  const [fecha_sesion, setFechaSesion] = useState<Date>(new Date());
+  const [fechaventa, setFechaVenta] = useState<Date>(new Date());
   const [open, setOpen] = useState(false);
 
   const showDrawer = () => {
@@ -31,6 +34,60 @@ const TablaSesiones: React.FC = () => {
     fetchSession();
   }, []);
 
+  const handleSubmit = async () => {
+    const randomID =  Math.floor(Math.random() * (5 - 1 + 1)) + 1;
+
+    try {
+      const currentDateTime = new Date();
+      // Consultar el ID máximo actual en la tabla direccion
+      const maxIdResponse = await supabase
+        .from("sesiones")
+        .select("id_sesion")
+        .order("id_sesion", { ascending: false })
+        .limit(1);
+
+      const maxId = maxIdResponse.data?.[0]?.id_sesion || 0;
+      const newId = maxId + 1;
+
+      // Crear el objeto de dirección con el nuevo ID
+      const sesionInput: Session = {
+        id_sesion: newId,
+        fecha_sesion,
+        idcliente,
+        fechaventa,
+        fechacreacion: currentDateTime,
+        fk_creadopor: randomID
+      };
+
+      // Insertar el nuevo registro en la base de datos
+      await createSesion(sesionInput);
+
+      // Actualizar la lista de direcciones después de la inserción
+      const updatedSesiones = await getSesiones();
+      setSessions(updatedSesiones);
+      onClose();
+    } catch (error) {
+      console.error("Error creating sesiones:", error);
+    }
+  };
+
+  const onChangeC: InputNumberProps['onChange'] = (value) => {
+    if (value !== null && typeof value === 'number') {
+      setIDCliente(value);
+    } else {
+      setIDCliente(0);
+    }
+  };
+
+  const onChangeS: DatePickerProps['onChange'] = (date) => {
+    const selectedDate = new Date(date.year(), date.month() + 1, date.date());
+    setFechaSesion(selectedDate);
+  };
+
+  const onChangeV: DatePickerProps['onChange'] = (date) => {
+    const selectedDate = new Date(date.year(), date.month() + 1, date.date());
+    setFechaVenta(selectedDate);
+  };
   const columns = [
     {
         title: 'ID_Sesion',
@@ -104,95 +161,30 @@ const TablaSesiones: React.FC = () => {
         Agregar sesiones
       </Button>
       <Table columns={columns} dataSource={session}/>
-      <Drawer title="Agregar Sesiones" onClose={onClose} open={open} footer={<DrawerFooter/>}>
-        <Form>
-          <Form.Item<Session>
-            label="ID_Sesion"
-            name="ID_Sesion"
-            rules={[{ required: true, message: "Agrega el ID de la sesión" }]}
-          >
-            <Input />
-          </Form.Item>
-
+      <Drawer title="Agregar Sesiones" onClose={onClose} open={open} footer={<DrawerFooter createRecord={handleSubmit}/>}>
+      <Form onFinish={handleSubmit}>
+    
           <Form.Item<Session>
             label="Fecha_Sesion"
-            name="Fecha_Sesion"
+            name="fecha_sesion"
             rules={[{ required: false}]}
           >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="Hora_Sesion"
-            name="Hora_Sesion"
-            rules={[{ required: false}]}
-          >
-            <Input />
-          </Form.Item>
+          <DatePicker onChange={onChangeS} />          </Form.Item>
 
           <Form.Item<Session>
             label="ID_Cliente"
-            name="ID_Cliente"
+            name="idcliente"
             rules={[{ required: true, message: "Agrega ID de la sesión" }]}
           >
-            <Input />
-          </Form.Item>
+          <InputNumber defaultValue={idcliente} onChange={onChangeC} />          </Form.Item>
 
           <Form.Item<Session>
             label="Fecha_Venta"
-            name="Fecha_Venta"
+            name="fechaventa"
             rules={[{ required: true, message: "Agrega fecha de la venta" }]}
           >
-            <Input />
-          </Form.Item>
+          <DatePicker onChange={onChangeV} />          </Form.Item>
 
-          <Form.Item<Session>
-            label="FechaCreacion"
-            name="FechaCreacion"
-            rules={[{ required: true, message: "Agrega fecha de creacion" }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="fk_CreadoPor"
-            name="fk_CreadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="FechaActu"
-            name="FechaActu"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="fk_ActualizadoPor"
-            name="fk_ActualizadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="FechaEliminado"
-            name="FechaEliminado"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
-
-          <Form.Item<Session>
-            label="fk_EliminadoPor"
-            name="fk_EliminadoPor"
-            rules={[{ required: false }]}
-          >
-            <Input />
-          </Form.Item>
           <Form.Item wrapperCol={{ offset: 8, span: 16 }}>
           </Form.Item>
         </Form>
